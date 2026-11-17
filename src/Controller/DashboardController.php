@@ -33,7 +33,7 @@ class DashboardController extends AbstractController
         return $this->json(['ok' => true]);
     }
 
-    #[Route('/', name: 'app_dashboard')]
+    #[Route('/', name: 'app_dashboard', methods: ['GET'])]
     public function index(): Response
     {
         $domainIds = $this->domainContext->scopedDomainIds();

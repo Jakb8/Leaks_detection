@@ -1,8 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        (function () {
+            var theme = localStorage.getItem('wl-theme');
+            if (theme !== 'light' && theme !== 'dark') {
+                theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+            document.documentElement.setAttribute('data-bs-theme', theme);
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
     <title>{% block title %}WatchLeaks{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
@@ -10,14 +20,94 @@
         <style>
             :root {
                 --sidebar-width: 250px;
-                --sidebar-bg: #1a1d21;
-                --sidebar-link: #adb5bd;
+                --sidebar-bg: #15181c;
+                --sidebar-link: #aab2bd;
                 --sidebar-link-active: #ffffff;
-                --card-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+                --card-shadow: 0 0.5rem 1.5rem rgba(15, 23, 42, 0.08);
+                --wl-bg: #f4f6fb;
+                --wl-surface: #ffffff;
+                --wl-text: #1f2937;
+                --wl-muted: #6b7280;
+                --wl-border: rgba(15, 23, 42, 0.09);
+                --wl-row: #fff8e1;
+            }
+
+            [data-bs-theme="dark"] {
+                --sidebar-bg: #0b0d10;
+                --sidebar-link: #9aa4b2;
+                --card-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.35);
+                --wl-bg: #0f1115;
+                --wl-surface: #171a20;
+                --wl-text: #e5e7eb;
+                --wl-muted: #9ca3af;
+                --wl-border: rgba(255, 255, 255, 0.09);
+                --wl-row: rgba(255, 193, 7, 0.14);
+            }
+
+            html, body {
+                min-height: 100%;
             }
 
             body {
-                background-color: #f4f6f9;
+                background-color: var(--wl-bg);
+                color: var(--wl-text);
+                font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                font-size: 0.95rem;
+                line-height: 1.55;
+                -webkit-font-smoothing: antialiased;
+            }
+
+            h1, h2, h3, h4, h5, h6 {
+                font-weight: 700;
+                letter-spacing: -0.02em;
+            }
+
+            .btn, .form-control, .form-select, .alert, .card, .modal-content {
+                border-radius: 0.7rem;
+            }
+
+            .card {
+                border: 1px solid var(--wl-border);
+                background-color: var(--wl-surface);
+                color: var(--wl-text);
+                box-shadow: var(--card-shadow);
+            }
+
+            .card-header, .card-footer {
+                background-color: transparent;
+                border-color: var(--wl-border);
+            }
+
+            .table {
+                --bs-table-bg: transparent;
+                --bs-table-color: var(--wl-text);
+                color: var(--wl-text);
+            }
+
+            .table > :not(caption) > * > * {
+                vertical-align: middle;
+                border-color: var(--wl-border);
+            }
+
+            .form-control, .form-select, .input-group-text {
+                background-color: var(--wl-surface);
+                color: var(--wl-text);
+                border-color: var(--wl-border);
+            }
+
+            .form-control:focus, .form-select:focus {
+                background-color: var(--wl-surface);
+                color: var(--wl-text);
+            }
+
+            .input-group-text {
+                color: var(--wl-muted);
+            }
+
+            .wl-code {
+                background-color: var(--wl-bg);
+                color: var(--wl-text);
+                border: 1px solid var(--wl-border);
             }
 
             .sidebar {
@@ -36,31 +126,31 @@
                 color: var(--sidebar-link);
                 padding: 0.75rem 1.25rem;
                 border-left: 3px solid transparent;
+                font-weight: 500;
             }
 
             .sidebar .nav-link:hover {
-                color: #fff;
+                color: var(--sidebar-link-active);
                 background-color: rgba(255, 255, 255, 0.05);
             }
 
             .sidebar .nav-link.active {
                 color: var(--sidebar-link-active);
-                background-color: rgba(255, 255, 255, 0.08);
+                background-color: rgba(13, 110, 253, 0.18);
                 border-left-color: #0d6efd;
+            }
+
+            .sidebar-user {
+                background-color: rgba(255, 255, 255, 0.05);
             }
 
             .content {
                 margin-left: var(--sidebar-width);
-                padding: 1.5rem;
-            }
-
-            .card {
-                border: none;
-                box-shadow: var(--card-shadow);
+                padding: 1.75rem;
             }
 
             .stat-card {
-                border-radius: 0.5rem;
+                border-radius: 0.85rem;
             }
 
             .attack-pulse {
@@ -78,17 +168,17 @@
             .severity-medium { border-left: 4px solid #0dcaf0; }
             .severity-low { border-left: 4px solid #198754; }
 
-            .table > :not(caption) > * > * {
-                vertical-align: middle;
-            }
-
             .new-row {
-                background-color: #fff3cd !important;
+                background-color: var(--wl-row) !important;
             }
 
             .new-row.highlight {
                 transition: background-color 1.5s ease;
                 background-color: transparent !important;
+            }
+
+            .theme-toggle {
+                z-index: 1090;
             }
 
             @media (max-width: 991.5px) {
@@ -103,7 +193,7 @@
 
                 .content {
                     margin-left: 0;
-                    padding-top: 4rem;
+                    padding-top: 4.5rem;
                 }
             }
         </style>
@@ -111,28 +201,59 @@
     {% block head %}{% endblock %}
 </head>
 <body>
+<button id="themeToggle" type="button" class="btn btn-sm btn-outline-secondary position-fixed top-0 end-0 m-2 theme-toggle"
+        aria-label="Basculer le thème" aria-pressed="false" title="Passer en mode sombre">
+    <i class="bi bi-moon-stars" aria-hidden="true"></i>
+</button>
+
 {% if app.user %}
-    <a class="visually-hidden-focusable" href="#main-content">Skip to content</a>
+    <a class="visually-hidden-focusable" href="#main-content">Aller au contenu</a>
     <button class="btn btn-primary d-lg-none position-fixed top-0 start-0 m-2" style="z-index:1100" type="button"
             data-bs-toggle="collapse" data-bs-target="#sidebarNav" aria-controls="sidebarNav"
-            aria-expanded="false" aria-label="Toggle navigation">
+            aria-expanded="false" aria-label="Afficher le menu">
         <i class="bi bi-list"></i>
     </button>
     <div id="sidebarNav" class="collapse d-lg-block">
         {% include 'partials/sidebar.html.twig' %}
     </div>
-    <div class="content" id="main-content">
-        {% include 'partials/flashes.html.twig' %}
-        {% block body %}{% endblock %}
-    </div>
-{% else %}
-    <div class="container-fluid">
-        {% include 'partials/flashes.html.twig' %}
-        {% block body_no_auth %}{% endblock %}
-    </div>
 {% endif %}
 
+<div class="{{ app.user ? 'content' : 'container-fluid' }}" {% if app.user %}id="main-content"{% endif %}>
+    {% include 'partials/flashes.html.twig' %}
+    {% block body %}{% endblock %}
+    {% block body_no_auth %}{% endblock %}
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    (function () {
+        var button = document.getElementById('themeToggle');
+        if (!button) {
+            return;
+        }
+
+        var icon = button.querySelector('i');
+
+        function syncIcon(theme) {
+            var dark = theme === 'dark';
+            icon.className = dark ? 'bi bi-sun' : 'bi bi-moon-stars';
+            button.setAttribute('aria-pressed', dark ? 'true' : 'false');
+            button.title = dark ? 'Passer en mode clair' : 'Passer en mode sombre';
+            button.setAttribute('aria-label', button.title);
+        }
+
+        syncIcon(document.documentElement.getAttribute('data-bs-theme') || 'light');
+
+        button.addEventListener('click', function () {
+            var current = document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'dark' : 'light';
+            var next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-bs-theme', next);
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('wl-theme', next);
+            syncIcon(next);
+        });
+    })();
+</script>
 {% block javascripts %}{% endblock %}
 </body>
 </html>

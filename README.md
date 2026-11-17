@@ -1,6 +1,6 @@
 # WatchLeaks
 
-WatchLeaks est un tableau de bord Symfony qui supervise des domaines, importe des fuites et attaques depuis des sources OSINT publiques, et fournit un audit manuel (Telegram/paste, HIBP, DeHashed, Intelligence X).
+WatchLeaks est un tableau de bord Symfony qui supervise des domaines, importe des fuites et attaques depuis des sources OSINT publiques, et fournit un audit manuel (Telegram/paste, HIBP, DeHashed, Intelligence X). L'interface responsive propose un mode clair/sombre persistant.
 
 ## 1. Prérequis
 

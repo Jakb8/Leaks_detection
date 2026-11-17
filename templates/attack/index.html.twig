@@ -82,7 +82,7 @@
                     <td>{{ attack.type.label }}</td>
                     <td><span class="badge bg-{{ attack.severity.badgeClass }}">{{ attack.severity.label }}</span></td>
                     <td><code class="small">{{ attack.sourceIp ?: '-' }}</code></td>
-                    <td class="small">{{ attack.endpoint ?: '-' }} {% if attack.httpMethod %}<span class="badge bg-light text-dark">{{ attack.httpMethod }}</span>{% endif %}</td>
+                    <td class="small">{{ attack.endpoint ?: '-' }} {% if attack.httpMethod %}<span class="badge bg-secondary-subtle text-secondary-emphasis">{{ attack.httpMethod }}</span>{% endif %}</td>
                     <td class="small">{{ attack.country ?: '-' }}</td>
                     <td>
                         <form method="post" action="{{ path('app_attack_status', {id: attack.id}) }}" class="d-flex gap-1">

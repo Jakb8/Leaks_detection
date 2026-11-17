@@ -38,6 +38,8 @@ security:
         - { path: ^/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/ingest, roles: PUBLIC_ACCESS }
         - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/settings, roles: ROLE_ADMIN }
+        - { path: ^/audit, roles: ROLE_ADMIN }
         - { path: ^/, roles: ROLE_USER }
 
 when@test:

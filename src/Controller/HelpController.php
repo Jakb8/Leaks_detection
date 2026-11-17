@@ -12,7 +12,7 @@ use Symfony\Component\Routing\Attribute\Route;
  */
 class HelpController extends AbstractController
 {
-    #[Route('/help', name: 'app_help')]
+    #[Route('/help', name: 'app_help', methods: ['GET'])]
     public function index(): Response
     {
         $glossary = [
