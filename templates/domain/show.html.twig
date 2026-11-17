@@ -1,0 +1,116 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ domain.name }} - WatchLeaks{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-0">
+            <i class="bi bi-globe2 me-2 text-primary"></i>{{ domain.name }}
+        </h3>
+        <small class="text-muted">Owner: {{ domain.owner ? domain.owner.email : '-' }} · Created {{ domain.createdAt|date('Y-m-d') }}</small>
+    </div>
+    <a href="{{ path('app_domain_index') }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Back
+    </a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card p-3">
+            <div class="text-muted small">Status</div>
+            <div class="fs-5 fw-bold">
+                {% if domain.monitoringEnabled %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Paused</span>{% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="text-muted small">API Key</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="copy-api-key"
+                        data-api-key="{{ domain.apiKey }}" title="Copy API key" aria-label="Copy API key">
+                    <i class="bi bi-copy me-1"></i> Copy
+                </button>
+            </div>
+            <code class="small">{{ domain.apiKey }}</code>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3">
+            <div class="text-muted small">Last Scan</div>
+            <div class="fs-6">{{ domain.lastScanAt ? domain.lastScanAt|date('Y-m-d H:i:s') : 'Never' }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card p-3">
+            <h6 class="fw-bold mb-3">Data Leaks ({{ leaks|length }})</h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead><tr><th>Type</th><th>Severity</th><th>Detected</th><th></th></tr></thead>
+                    <tbody>
+                        {% for leak in leaks %}
+                        <tr>
+                            <td>{{ leak.type.label }}</td>
+                            <td><span class="badge bg-{{ leak.severity.badgeClass }}">{{ leak.severity.label }}</span></td>
+                            <td class="small">{{ leak.detectedAt|date('Y-m-d H:i') }}</td>
+                            <td class="text-end">
+                                {% if not leak.resolved %}
+                                <form method="post" action="{{ path('app_leak_resolve', {id: leak.id}) }}" class="d-inline">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('resolve' ~ leak.id) }}">
+                                    <button class="btn btn-sm btn-outline-success" title="Mark resolved"><i class="bi bi-check"></i></button>
+                                </form>
+                                {% else %}
+                                    <span class="badge bg-success">Resolved</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" class="text-muted text-center py-2">No leaks.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card p-3">
+            <h6 class="fw-bold mb-3">Attacks ({{ attacks|length }})</h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead><tr><th>Type</th><th>Severity</th><th>Status</th><th>Detected</th></tr></thead>
+                    <tbody>
+                        {% for attack in attacks %}
+                        <tr>
+                            <td>{{ attack.type.label }}</td>
+                            <td><span class="badge bg-{{ attack.severity.badgeClass }}">{{ attack.severity.label }}</span></td>
+                            <td><span class="badge bg-{{ attack.status.badgeClass }}">{{ attack.status.label }}</span></td>
+                            <td class="small">{{ attack.detectedAt|date('Y-m-d H:i') }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" class="text-muted text-center py-2">No attacks.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+    const copyButton = document.getElementById('copy-api-key');
+    if (copyButton && navigator.clipboard) {
+        copyButton.addEventListener('click', async function () {
+            await navigator.clipboard.writeText(copyButton.dataset.apiKey);
+            const label = copyButton.innerHTML;
+            copyButton.innerHTML = '<i class="bi bi-check2 me-1"></i> Copied';
+            setTimeout(function () { copyButton.innerHTML = label; }, 1500);
+        });
+    }
+</script>
+{% endblock %}

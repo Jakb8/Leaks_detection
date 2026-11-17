@@ -1,0 +1,180 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Attacks - WatchLeaks{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-0">Detected Attacks</h3>
+        <small class="text-muted">OWASP Top 10 · {% if isAdmin %}all domains{% else %}your domains{% endif %} · {{ attacks|length }} records</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ path('app_attack_index', {type: type, severity: severity, status: status, q: q, export: 'csv'}) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-download me-1"></i> Export CSV
+        </a>
+        <a href="{{ path('app_attack_new') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Record Attack
+        </a>
+    </div>
+</div>
+
+<div class="card p-3 mb-4">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label small" for="filter-type">OWASP Type</label>
+            <select name="type" id="filter-type" class="form-select form-select-sm">
+                <option value="">All</option>
+                {% for t in types %}
+                <option value="{{ t.value }}" {{ type == t.value ? 'selected' }}>{{ t.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small" for="filter-severity">Severity</label>
+            <select name="severity" id="filter-severity" class="form-select form-select-sm">
+                <option value="">All</option>
+                {% for s in severities %}
+                <option value="{{ s.value }}" {{ severity == s.value ? 'selected' }}>{{ s.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small" for="filter-status">Status</label>
+            <select name="status" id="filter-status" class="form-select form-select-sm">
+                <option value="">All</option>
+                {% for st in statuses %}
+                <option value="{{ st.value }}" {{ status == st.value ? 'selected' }}>{{ st.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small" for="filter-q">Search</label>
+            <input type="search" name="q" id="filter-q" value="{{ q }}" class="form-control form-control-sm" placeholder="IP, endpoint, payload…">
+        </div>
+        <div class="col-md-2 d-flex gap-1">
+            <button class="btn btn-sm btn-primary flex-grow-1"><i class="bi bi-funnel me-1"></i> Filter</button>
+            <a href="{{ path('app_attack_index') }}" class="btn btn-sm btn-outline-secondary" aria-label="Reset filters" title="Reset filters"><i class="bi bi-arrow-counterclockwise"></i></a>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Detected</th>
+                    <th>Domain</th>
+                    <th>OWASP Type</th>
+                    <th>Severity</th>
+                    <th>Source IP</th>
+                    <th>Endpoint</th>
+                    <th>Country</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="attack-tbody">
+                {% for attack in attacks %}
+                <tr data-attack-id="{{ attack.id }}" class="severity-{{ attack.severity.value }}">
+                    <td class="small">{{ attack.detectedAt|date('Y-m-d H:i:s') }}</td>
+                    <td class="fw-semibold">{{ attack.domain.name }}</td>
+                    <td>{{ attack.type.label }}</td>
+                    <td><span class="badge bg-{{ attack.severity.badgeClass }}">{{ attack.severity.label }}</span></td>
+                    <td><code class="small">{{ attack.sourceIp ?: '-' }}</code></td>
+                    <td class="small">{{ attack.endpoint ?: '-' }} {% if attack.httpMethod %}<span class="badge bg-light text-dark">{{ attack.httpMethod }}</span>{% endif %}</td>
+                    <td class="small">{{ attack.country ?: '-' }}</td>
+                    <td>
+                        <form method="post" action="{{ path('app_attack_status', {id: attack.id}) }}" class="d-flex gap-1">
+                            <input type="hidden" name="_token" value="{{ csrf_token('status' ~ attack.id) }}">
+                            <select name="status" class="form-select form-select-sm w-auto" onchange="this.form.submit()" aria-label="Attack status">
+                                {% for st in statuses %}
+                                <option value="{{ st.value }}" {{ attack.status == st ? 'selected' }}>{{ st.label }}</option>
+                                {% endfor %}
+                            </select>
+                        </form>
+                    </td>
+                    <td class="text-end">
+                        <button type="button" class="btn btn-sm btn-outline-info" title="Details" aria-label="Details"
+                                data-bs-toggle="modal" data-bs-target="#attackDetailModal"
+                                data-domain="{{ attack.domain.name }}"
+                                data-type="{{ attack.type.label }}"
+                                data-severity="{{ attack.severity.label }}"
+                                data-status="{{ attack.status.label }}"
+                                data-source="{{ attack.sourceIp }}"
+                                data-endpoint="{{ attack.endpoint }}"
+                                data-method="{{ attack.httpMethod }}"
+                                data-country="{{ attack.country }}"
+                                data-agent="{{ attack.userAgent }}"
+                                data-payload="{{ attack.payload }}"
+                                data-detected="{{ attack.detectedAt|date('Y-m-d H:i:s') }}">
+                            <i class="bi bi-info-circle"></i>
+                        </button>
+                        <form method="post" action="{{ path('app_attack_delete', {id: attack.id}) }}" class="d-inline" onsubmit="return confirm('Delete this attack event?')">
+                            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ attack.id) }}">
+                            <button class="btn btn-sm btn-outline-danger" title="Delete" aria-label="Delete"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="9" class="text-center text-muted py-4">
+                    {% if type or severity or status or q %}
+                        No attack matches these filters. <a href="{{ path('app_attack_index') }}">Reset filters</a>.
+                    {% else %}
+                        No attacks recorded yet. <a href="{{ path('app_attack_new') }}">Record the first one</a>.
+                    {% endif %}
+                </td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="attackDetailModal" tabindex="-1" aria-labelledby="attackDetailTitle">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="attackDetailTitle">Attack details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-3">Domain</dt><dd class="col-sm-9" id="atDomain">-</dd>
+                    <dt class="col-sm-3">Type</dt><dd class="col-sm-9" id="atType">-</dd>
+                    <dt class="col-sm-3">Severity</dt><dd class="col-sm-9" id="atSeverity">-</dd>
+                    <dt class="col-sm-3">Status</dt><dd class="col-sm-9" id="atStatus">-</dd>
+                    <dt class="col-sm-3">Source IP</dt><dd class="col-sm-9" id="atSource">-</dd>
+                    <dt class="col-sm-3">Endpoint</dt><dd class="col-sm-9" id="atEndpoint">-</dd>
+                    <dt class="col-sm-3">HTTP Method</dt><dd class="col-sm-9" id="atMethod">-</dd>
+                    <dt class="col-sm-3">Country</dt><dd class="col-sm-9" id="atCountry">-</dd>
+                    <dt class="col-sm-3">User Agent</dt><dd class="col-sm-9" id="atAgent">-</dd>
+                    <dt class="col-sm-3">Payload</dt><dd class="col-sm-9"><pre id="atPayload" class="bg-body-tertiary border rounded p-2 small mb-0" style="white-space:pre-wrap; word-break:break-word;">-</pre></dd>
+                    <dt class="col-sm-3">Detected</dt><dd class="col-sm-9" id="atDetected">-</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+    const attackModal = document.getElementById('attackDetailModal');
+    if (attackModal) {
+        attackModal.addEventListener('show.bs.modal', function (event) {
+            const btn = event.relatedTarget;
+            if (!btn) return;
+            const d = btn.dataset;
+            const fields = {
+                atDomain: d.domain, atType: d.type, atSeverity: d.severity,
+                atStatus: d.status, atSource: d.source, atEndpoint: d.endpoint,
+                atMethod: d.method, atCountry: d.country, atAgent: d.agent,
+                atPayload: d.payload, atDetected: d.detected
+            };
+            for (const [id, value] of Object.entries(fields)) {
+                document.getElementById(id).textContent = value || '-';
+            }
+        });
+    }
+</script>
+{% endblock %}

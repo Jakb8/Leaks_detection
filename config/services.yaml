@@ -1,0 +1,11 @@
+services:
+    _defaults:
+        autowire: true      # inject dependencies automatically
+        autoconfigure: true # register commands/event subscribers automatically
+
+    # Every class in src/ becomes a service (except Entity, Kernel)
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/Entity/'
+            - '../src/Kernel.php'

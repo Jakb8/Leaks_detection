@@ -1,0 +1,102 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Domain audit - WatchLeaks{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-0"><i class="bi bi-search me-2"></i>Domain audit</h3>
+        <small class="text-muted">Generate manual OSINT checks for one company domain</small>
+    </div>
+    <a href="{{ path('app_help') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Help</a>
+</div>
+
+<div class="card p-4 mb-4">
+    <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-5">
+            <label class="form-label" for="domain-select">Monitored domain</label>
+            <select class="form-select" id="domain-select" onchange="if (this.value) document.getElementById('domain-input').value = this.value">
+                <option value="">— Choose a domain —</option>
+                {% for item in domains %}
+                <option value="{{ item.name }}" {{ domain == item.name ? 'selected' }}>{{ item.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-5">
+            <label class="form-label" for="domain-input">Or enter a domain</label>
+            <input type="text" name="domain" id="domain-input" class="form-control" value="{{ raw_domain }}" placeholder="example.com">
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-primary w-100"><i class="bi bi-search me-1"></i> Generate</button>
+        </div>
+    </form>
+</div>
+
+{% if raw_domain is not empty and domain is null %}
+<div class="alert alert-danger">
+    <i class="bi bi-exclamation-triangle me-2"></i> Invalid domain. Use a hostname such as <code>example.com</code>.
+</div>
+{% endif %}
+
+{% if domain %}
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card p-4 h-100">
+            <h5 class="fw-bold mb-3"><i class="bi bi-link-45deg me-2"></i>Telegram &amp; paste searches</h5>
+            <p class="small text-muted">Open these searches in a browser. WatchLeaks does not scrape Telegram or paste sites.</p>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead><tr><th>Check</th><th>Query</th><th></th></tr></thead>
+                    <tbody>
+                        {% for item in queries %}
+                        <tr>
+                            <td class="small fw-semibold">{{ item.name }}</td>
+                            <td><code class="small">{{ item.value }}</code></td>
+                            <td class="text-end">
+                                <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary" aria-label="Open {{ item.name }}">
+                                    <i class="bi bi-box-arrow-up-right"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card p-4 mb-4">
+            <h5 class="fw-bold mb-3"><i class="bi bi-database me-2"></i>Breach databases</h5>
+            <ul class="small mb-0">
+                <li class="mb-2">
+                    <strong>HIBP Domain Search</strong> — verify domain ownership once, then enumerate breached corporate emails.
+                    <a href="https://haveibeenpwned.com/DomainSearch" target="_blank" rel="noopener noreferrer">Open HIBP</a>.
+                </li>
+                <li class="mb-2"><strong>DeHashed</strong> — copy query <code>domain:{{ domain }}</code> or <code>email:*@{{ domain }}</code>.</li>
+                <li><strong>Intelligence X</strong> — copy query <code>domain:{{ domain }}</code> for leaks, pastes and darknet results.</li>
+            </ul>
+        </div>
+
+        <div class="card p-4">
+            <h5 class="fw-bold mb-3"><i class="bi bi-check2-square me-2"></i>After a finding</h5>
+            <ol class="small mb-0">
+                <li>Date and deduplicate the record; most "new" hits are old combos re-uploaded.</li>
+                <li>Reset affected passwords and revoke active sessions/cookies.</li>
+                <li>Enforce MFA and verify whether the password also unlocks VPN or O365.</li>
+                <li>Keep only matched records (email, breach, date). Do not store raw third-party dumps.</li>
+            </ol>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-warning mt-4">
+    <i class="bi bi-shield-check me-2"></i>
+    Only audit domains you own or are explicitly authorized to investigate. This page generates search links; it does not buy, download or store leaked data.
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle me-2"></i> Choose or enter a domain to generate the audit queries.
+</div>
+{% endif %}
+{% endblock %}

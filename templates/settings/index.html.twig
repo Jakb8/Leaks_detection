@@ -1,0 +1,128 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}API Settings - WatchLeaks{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-0">Data Sources</h3>
+        <small class="text-muted">Connect real-time attack and leak detection sources</small>
+    </div>
+    <form method="post" action="{{ path('app_settings_sync') }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('sync_feeds') }}">
+        <button class="btn btn-success"><i class="bi bi-arrow-repeat me-1"></i> Sync Now</button>
+    </form>
+</div>
+
+<div class="row g-4">
+    {# Leak scanning #}
+    <div class="col-lg-6">
+        <div class="card p-4 h-100">
+            <h5 class="fw-bold mb-1"><i class="bi bi-database-fill-exclamation text-warning me-2"></i>Leak scanning</h5>
+            <p class="text-muted small">WatchLeaks automatically checks your domains against four free public threat-intelligence sources — no API keys needed:</p>
+            <ul class="small text-muted mb-3">
+                <li><strong>XposedOrNot</strong> — public breach database</li>
+                <li><strong>ransomware.live</strong> — dark-web ransomware leak sites</li>
+                <li><strong>Hudson Rock</strong> — information-stealer (infostealer) credentials</li>
+                <li><strong>LeakRadar</strong> — Telegram stealer logs, forums &amp; combolists</li>
+            </ul>
+            <form method="post">
+                <input type="hidden" name="_token" value="{{ csrf_token('xon_config') }}">
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" name="xon_enabled" id="xon_enabled" value="1" {{ xon_enabled ? 'checked' }}>
+                    <label class="form-check-label" for="xon_enabled">Enable automatic leak scanning</label>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Scan interval (seconds)</label>
+                    <input type="number" name="xon_scan_interval" class="form-control" min="30" value="{{ xon_scan_interval }}">
+                </div>
+                <button name="xon_save" value="1" class="btn btn-primary w-100"><i class="bi bi-save me-1"></i> Save</button>
+            </form>
+
+            <hr>
+            <h6 class="fw-bold">Quick email breach check</h6>
+            <p class="text-muted small mb-2">Check whether a single email address appears in any known public breach.</p>
+            <form method="post" action="{{ path('app_settings_email_check') }}" class="d-flex gap-2">
+                <input type="hidden" name="_token" value="{{ csrf_token('email_check') }}">
+                <input type="email" name="email" class="form-control form-control-sm" placeholder="someone@example.com" required>
+                <button class="btn btn-sm btn-outline-primary text-nowrap"><i class="bi bi-search me-1"></i> Check</button>
+            </form>
+        </div>
+    </div>
+
+    {# Attacks API #}
+    <div class="col-lg-6">
+        <div class="card p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <h5 class="fw-bold mb-0"><i class="bi bi-bug-fill text-danger me-2"></i>Attacks API</h5>
+                {% include 'settings/_status.html.twig' with {feed: attack_feed} %}
+            </div>
+            <p class="text-muted small">Your live attack/IDS feed. WatchLeaks polls it and imports real events.</p>
+            {{ form_start(attack_form) }}
+                {{ form_row(attack_form.endpointUrl) }}
+                <div class="row">
+                    <div class="col-6">{{ form_row(attack_form.httpMethod) }}</div>
+                    <div class="col-6">{{ form_row(attack_form.pollIntervalSeconds) }}</div>
+                </div>
+                <div class="row">
+                    <div class="col-6">{{ form_row(attack_form.authHeaderName) }}</div>
+                    <div class="col-6">{{ form_row(attack_form.authToken) }}</div>
+                </div>
+                {{ form_row(attack_form.queryParams) }}
+                {{ form_row(attack_form.enabled) }}
+                <button class="btn btn-primary w-100"><i class="bi bi-save me-1"></i> Save Attacks API</button>
+            {{ form_end(attack_form) }}
+        </div>
+    </div>
+</div>
+
+<div class="card p-4 mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h5 class="fw-bold mb-1"><i class="bi bi-key text-info me-2"></i>Optional API keys</h5>
+            <small class="text-muted">Leave blank to keep the current key. Check "Clear" to remove it.</small>
+        </div>
+    </div>
+    <form method="post" class="row g-3">
+        <input type="hidden" name="_token" value="{{ csrf_token('api_keys_config') }}">
+        <div class="col-md-6">
+            <label class="form-label" for="xon_api_key">XposedOrNot API key</label>
+            <div class="input-group">
+                <input type="password" name="xon_api_key" id="xon_api_key" class="form-control" autocomplete="new-password" placeholder="{{ xon_api_key_set ? '••••••••••••' : 'Paste your key' }}">
+                <span class="input-group-text">{{ xon_api_key_set ? 'Configured' : 'Not set' }}</span>
+            </div>
+            <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" name="xon_api_key_clear" id="xon_api_key_clear" value="1">
+                <label class="form-check-label small" for="xon_api_key_clear">Clear this key</label>
+            </div>
+            <small class="text-muted">Enables authenticated domain-breach lookups (one verified domain per key).</small>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label" for="leakradar_api_key">LeakRadar API key</label>
+            <div class="input-group">
+                <input type="password" name="leakradar_api_key" id="leakradar_api_key" class="form-control" autocomplete="new-password" placeholder="{{ leakradar_api_key_set ? '••••••••••••' : 'Paste your key' }}">
+                <span class="input-group-text">{{ leakradar_api_key_set ? 'Configured' : 'Not set' }}</span>
+            </div>
+            <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" name="leakradar_api_key_clear" id="leakradar_api_key_clear" value="1">
+                <label class="form-check-label small" for="leakradar_api_key_clear">Clear this key</label>
+            </div>
+            <small class="text-muted">Unlocks individual email/password records behind LeakRadar's public aggregate reports.</small>
+        </div>
+        <div class="col-12">
+            <button type="submit" name="api_keys_save" value="1" class="btn btn-primary">
+                <i class="bi bi-save me-1"></i> Save API keys
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="alert alert-info d-flex align-items-start mt-4">
+    <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+    <div>
+        <strong>How it works.</strong> A background worker continuously polls your configured Attacks API and re-scans every monitored
+        domain against the four leak sources listed above. New findings appear automatically on the Dashboard and Data Leaks pages.
+        <a href="{{ path('app_help') }}">See the glossary</a> for what "infostealer", "combolist" and "stealer log" mean.
+    </div>
+</div>
+{% endblock %}

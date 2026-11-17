@@ -1,0 +1,355 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dashboard - WatchLeaks{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-0">
+            {% if isAdmin %}Admin Dashboard{% else %}Client Dashboard{% endif %}
+        </h3>
+        <small class="text-muted">Real-time data leak & attack monitoring</small>
+    </div>
+    <span class="badge bg-success fs-6" id="live-indicator" aria-live="polite">
+        <i class="bi bi-circle-fill me-1"></i> Live
+    </span>
+</div>
+
+<div class="alert alert-light border d-flex align-items-center justify-content-between mb-4 py-2">
+    <div class="small text-muted">
+        <i class="bi bi-info-circle me-1"></i>
+        WatchLeaks automatically scans your domains on four free public sources and lists what it finds here.
+        New here? <a href="{{ path('app_help') }}">Read the glossary</a> or replay the intro tour.
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-primary text-nowrap" id="replay-tour">
+        <i class="bi bi-play-circle me-1"></i> Replay tour
+    </button>
+</div>
+
+{# Stats cards #}
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card p-3" title="Domains you are monitoring. Each one is scanned automatically every few minutes.">
+            <div class="d-flex align-items-center">
+                <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+                    <i class="bi bi-globe2 text-primary fs-4"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Domains</div>
+                    <div class="fs-4 fw-bold">{{ stats.totalDomains }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3" title="Every leak found for your domains across all four sources (breaches, ransomware, stealers, combolists).">
+            <div class="d-flex align-items-center">
+                <div class="rounded-circle bg-danger bg-opacity-10 p-3 me-3">
+                    <i class="bi bi-database-fill-exclamation text-danger fs-4"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Total Leaks</div>
+                    <div class="fs-4 fw-bold">{{ stats.totalLeaks }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3" title="Leaks still marked Open. Reset the affected passwords, then mark them Resolved.">
+            <div class="d-flex align-items-center">
+                <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
+                    <i class="bi bi-exclamation-circle text-warning fs-4"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Unresolved Leaks</div>
+                    <div class="fs-4 fw-bold">{{ stats.unresolvedLeaks }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3" title="Attack events recorded by your live Attacks API, classified by OWASP Top 10 category.">
+            <div class="d-flex align-items-center">
+                <div class="rounded-circle bg-danger bg-opacity-10 p-3 me-3">
+                    <i class="bi bi-bug-fill text-danger fs-4"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Attacks Detected</div>
+                    <div class="fs-4 fw-bold" id="total-attacks">{{ stats.totalAttacks }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    {# OWASP chart placeholder (bars via CSS) #}
+    <div class="col-lg-5">
+        <div class="card p-3 h-100">
+            <h6 class="fw-bold mb-3">Attacks by OWASP Top 10</h6>
+            {% for type in attackTypes %}
+                {% set total = typeTotals[type.value] ?? 0 %}
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between small">
+                        <span>{{ type.label }}</span>
+                        <span class="fw-bold">{{ total }}</span>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        {% set pct = stats.totalAttacks > 0 ? (total / stats.totalAttacks * 100)|round : 0 %}
+                        <div class="progress-bar bg-danger" style="width: {{ pct }}%"></div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    {# Real-time feed #}
+    <div class="col-lg-7">
+        <div class="card p-3 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0">Real-Time Attack Feed</h6>
+                <span class="badge bg-secondary" id="feed-count">{{ recentAttacks|length }}</span>
+            </div>
+            <div id="attack-feed" style="max-height: 420px; overflow-y: auto;">
+                <table class="table table-sm table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Domain</th>
+                            <th>Type</th>
+                            <th>Severity</th>
+                            <th>IP</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attack-feed-body" aria-live="polite">
+                        {% for attack in recentAttacks %}
+                        <tr data-attack-id="{{ attack.id }}">
+                            <td>{{ attack.detectedAt|date('H:i:s') }}</td>
+                            <td>{{ attack.domain.name }}</td>
+                            <td>{{ attack.type.label }}</td>
+                            <td><span class="badge bg-{{ attack.severity.badgeClass }}">{{ attack.severity.label }}</span></td>
+                            <td>{{ attack.sourceIp }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-center text-muted py-3">No attacks recorded yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Severity breakdown #}
+{% set sevHelp = {
+    critical: 'Immediate risk — employee credentials, a ransomware victim listing, or a large plaintext dump.',
+    high: 'Serious exposure — many accounts or data that is useful for phishing.',
+    medium: 'Real but limited exposure.',
+    low: 'Minor exposure — old or low-volume data.'
+} %}
+<div class="row g-3 mt-1">
+    {% for sev in ['critical', 'high', 'medium', 'low'] %}
+        <div class="col-md-3">
+            <div class="card p-3 text-center severity-{{ sev }}" title="{{ sevHelp[sev] }}" style="cursor: help;">
+                <div class="fs-4 fw-bold">{{ severityTotals[sev] ?? 0 }}</div>
+                <div class="text-muted small text-capitalize">{{ sev }} severity leaks</div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+{# First-run guided tour #}
+<div class="modal fade" id="tourModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="tourTitle">Welcome to WatchLeaks</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Skip tour" id="tourClose"></button>
+            </div>
+            <div class="modal-body">
+                <div id="tourStepIcon" class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width:64px;height:64px;">
+                    <i class="bi bi-shield-lock-fill fs-2 text-primary"></i>
+                </div>
+                <p id="tourStepText" class="lead mb-2"></p>
+                <p id="tourStepHint" class="text-muted small mb-0"></p>
+            </div>
+            <div class="modal-footer">
+                <span class="text-muted small me-auto" id="tourProgress"></span>
+                <button type="button" class="btn btn-outline-secondary" id="tourPrev">Back</button>
+                <button type="button" class="btn btn-primary" id="tourNext">Next</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+    (function () {
+        const feedBody = document.getElementById('attack-feed-body');
+        const feedCount = document.getElementById('feed-count');
+        const totalAttacksEl = document.getElementById('total-attacks');
+        const liveIndicator = document.getElementById('live-indicator');
+
+        if (!feedBody) return;
+
+        let since = null;
+        let totalAttacks = {{ stats.totalAttacks }};
+
+        async function poll() {
+            try {
+                const url = '/api/feed' + (since ? '?since=' + encodeURIComponent(since) : '');
+                const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                if (!res.ok) return;
+                const data = await res.json();
+                since = data.serverTime;
+
+                if (Array.isArray(data.attacks) && data.attacks.length) {
+                    for (const a of data.attacks) {
+                        if (feedBody.querySelector('[data-attack-id="' + a.id + '"]')) continue;
+                        totalAttacks += 1;
+                        if (totalAttacksEl) totalAttacksEl.textContent = totalAttacks;
+                        prependRow(a);
+                    }
+                }
+
+                const countEl = feedBody.querySelectorAll('tr[data-attack-id]').length;
+                if (feedCount) feedCount.textContent = countEl;
+                liveIndicator.classList.add('text-success');
+            } catch (e) {
+                liveIndicator.classList.remove('text-success');
+                liveIndicator.classList.add('text-danger');
+            }
+        }
+
+        function prependRow(a) {
+            const empty = feedBody.querySelector('td[colspan]');
+            if (empty) empty.closest('tr').remove();
+
+            const tr = document.createElement('tr');
+            tr.setAttribute('data-attack-id', a.id);
+            tr.classList.add('new-row');
+            const values = [
+                a.detectedAt ? new Date(a.detectedAt).toLocaleTimeString() : '',
+                a.domain || '',
+                a.typeLabel || a.type || '',
+                a.severity || '',
+                a.sourceIp || ''
+            ];
+            values.forEach(function (value, index) {
+                const td = document.createElement('td');
+                if (index === 3) {
+                    const badge = document.createElement('span');
+                    badge.className = 'badge bg-' + severityBadge(a.severity);
+                    badge.textContent = value;
+                    td.appendChild(badge);
+                } else {
+                    td.textContent = value;
+                }
+                tr.appendChild(td);
+            });
+            feedBody.insertBefore(tr, feedBody.firstChild);
+            setTimeout(() => tr.classList.add('highlight'), 50);
+        }
+
+        function severityBadge(s) {
+            return ({ critical: 'danger', high: 'warning', medium: 'info', low: 'success' })[s] || 'secondary';
+        }
+
+        setInterval(poll, 5000);
+        poll();
+    })();
+</script>
+
+<script>
+    (function () {
+        const steps = [
+            {
+                icon: 'bi-globe2',
+                title: 'Step 1 — Add your domains',
+                text: 'Everything starts in Domains. Add the domain you want to protect and WatchLeaks begins monitoring it immediately.',
+                hint: 'Sidebar → Domains → "Add domain". You can add as many as you like.'
+            },
+            {
+                icon: 'bi-arrow-repeat',
+                title: 'Step 2 — Automatic scanning',
+                text: 'A background worker re-checks every domain against four free public sources: XposedOrNot (breaches), ransomware.live (ransomware leak sites), Hudson Rock (infostealer logs) and LeakRadar (Telegram logs & combolists).',
+                hint: 'No API keys are needed. Leave the tab open and the numbers update by themselves.'
+            },
+            {
+                icon: 'bi-database-fill-exclamation',
+                title: 'Step 3 — Read the findings',
+                text: 'Anything found appears on this Dashboard and under Data Leaks, ranked from Low to Critical. Click the eye icon on a leak to see the full detail.',
+                hint: 'Hover any card or colour-coded badge to see what it means.'
+            },
+            {
+                icon: 'bi-exclamation-octagon',
+                title: 'Step 4 — Understand the risk',
+                text: 'Critical means act now (employee credentials, ransomware victim, large plaintext dump). High means serious exposure. See the glossary for terms like "infostealer" and "combolist".',
+                hint: 'Sidebar → Help & Glossary explains every term in plain language.'
+            },
+            {
+                icon: 'bi-check2-circle',
+                title: 'Step 5 — Respond and resolve',
+                text: 'Reset the affected passwords, enable 2FA, then mark the leak as Resolved. Everything stays logged for your records.',
+                hint: 'That\'s it — you now know how to use WatchLeaks. Enjoy!'
+            }
+        ];
+
+        const modalEl = document.getElementById('tourModal');
+        if (!modalEl) return;
+
+        const modal = new bootstrap.Modal(modalEl);
+        let index = 0;
+
+        const elTitle = document.getElementById('tourTitle');
+        const elIcon = document.getElementById('tourStepIcon').querySelector('i');
+        const elText = document.getElementById('tourStepText');
+        const elHint = document.getElementById('tourStepHint');
+        const elProgress = document.getElementById('tourProgress');
+        const btnPrev = document.getElementById('tourPrev');
+        const btnNext = document.getElementById('tourNext');
+
+        function render() {
+            const step = steps[index];
+            elTitle.textContent = step.title;
+            elIcon.className = 'bi ' + step.icon + ' fs-2 text-primary';
+            elText.textContent = step.text;
+            elHint.textContent = step.hint;
+            elProgress.textContent = 'Step ' + (index + 1) + ' of ' + steps.length;
+            btnPrev.style.visibility = index === 0 ? 'hidden' : 'visible';
+            btnNext.innerHTML = index === steps.length - 1
+                ? '<i class="bi bi-check2 me-1"></i> Finish'
+                : 'Next <i class="bi bi-arrow-right"></i>';
+        }
+
+        function complete() {
+            fetch('{{ path('app_tour_complete') }}', {
+                method: 'POST',
+                headers: { 'X-CSRF-Token': '{{ csrf_token('tour_complete') }}' }
+            }).catch(function () {});
+        }
+
+        btnNext.addEventListener('click', function () {
+            if (index >= steps.length - 1) { complete(); modal.hide(); return; }
+            index += 1; render();
+        });
+
+        btnPrev.addEventListener('click', function () {
+            if (index > 0) { index -= 1; render(); }
+        });
+
+        document.getElementById('tourClose').addEventListener('click', complete);
+
+        const replay = document.getElementById('replay-tour');
+        if (replay) {
+            replay.addEventListener('click', function () { index = 0; render(); modal.show(); });
+        }
+
+        {% if showTour %}
+        render();
+        modal.show();
+        {% endif %}
+    })();
+</script>
+{% endblock %}

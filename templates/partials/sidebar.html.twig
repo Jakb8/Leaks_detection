@@ -1,0 +1,73 @@
+{% set current = app.request.attributes.get('_route') %}
+<aside class="sidebar d-flex flex-column">
+    <div class="px-3 mb-4">
+        <a href="{{ path('app_dashboard') }}" class="text-white text-decoration-none d-flex align-items-center gap-2">
+            <i class="bi bi-shield-lock-fill fs-3 text-primary"></i>
+            <span class="fs-5 fw-bold">WatchLeaks</span>
+        </a>
+    </div>
+
+    <ul class="nav nav-pills flex-column">
+        <li class="nav-item">
+            <a href="{{ path('app_dashboard') }}" class="nav-link {{ current == 'app_dashboard' ? 'active' }}">
+                <i class="bi bi-speedometer2 me-2"></i> Dashboard
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ path('app_domain_index') }}" class="nav-link {{ current starts with 'app_domain' ? 'active' }}">
+                <i class="bi bi-globe2 me-2"></i> Domains
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ path('app_leak_index') }}" class="nav-link {{ current starts with 'app_leak' ? 'active' }}">
+                <i class="bi bi-database-fill-exclamation me-2"></i> Data Leaks
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ path('app_attack_index') }}" class="nav-link {{ current starts with 'app_attack' ? 'active' }}">
+                <i class="bi bi-bug-fill me-2"></i> Attacks
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ path('app_help') }}" class="nav-link {{ current == 'app_help' ? 'active' }}">
+                <i class="bi bi-question-circle me-2"></i> Help &amp; Glossary
+            </a>
+        </li>
+
+        {% if is_granted('ROLE_ADMIN') %}
+        <li class="nav-item mt-3">
+            <small class="text-secondary px-3 text-uppercase" style="font-size:.7rem; letter-spacing:.08em;">Administration</small>
+        </li>
+        <li class="nav-item">
+            <a href="{{ path('app_admin_user_index') }}" class="nav-link {{ current starts with 'app_admin_user' ? 'active' }}">
+                <i class="bi bi-people-fill me-2"></i> Users
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ path('app_audit') }}" class="nav-link {{ current == 'app_audit' ? 'active' }}">
+                <i class="bi bi-search me-2"></i> Domain Audit
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ path('app_settings') }}" class="nav-link {{ current starts with 'app_settings' ? 'active' }}">
+                <i class="bi bi-gear-fill me-2"></i> Settings
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+
+    <div class="mt-auto px-3 pb-3">
+        <div class="mb-3 p-2 rounded" style="background-color: rgba(255,255,255,0.05);">
+            <small class="text-secondary d-block">Logged in as</small>
+            <span class="text-white small">{{ app.user.email }}</span>
+            {% if is_granted('ROLE_ADMIN') %}
+                <span class="badge bg-primary ms-1">Admin</span>
+            {% else %}
+                <span class="badge bg-secondary ms-1">Client</span>
+            {% endif %}
+        </div>
+        <a href="{{ path('app_logout') }}" class="btn btn-outline-light btn-sm w-100">
+            <i class="bi bi-box-arrow-right me-1"></i> Logout
+        </a>
+    </div>
+</aside>

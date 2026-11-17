@@ -1,0 +1,36 @@
+{% if error %}
+<div class="alert alert-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i> {{ error }}</div>
+{% endif %}
+
+<div class="mb-3">
+    <label class="form-label">Email <span class="text-danger">*</span></label>
+    <input type="email" name="email" class="form-control" value="{{ email ?? '' }}" required>
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Password {% if not requirePassword %}<small class="text-muted">(leave blank to keep current)</small>{% endif %} {% if requirePassword %}<span class="text-danger">*</span>{% endif %}</label>
+    <input type="password" name="password" class="form-control" minlength="6" {% if requirePassword %}required{% endif %} autocomplete="new-password">
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Full name</label>
+    <input type="text" name="fullName" class="form-control" value="{{ fullName ?? '' }}">
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Company</label>
+    <input type="text" name="company" class="form-control" value="{{ company ?? '' }}">
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Role</label>
+    <select name="role" class="form-select">
+        <option value="ROLE_CLIENT" {{ (role ?? 'ROLE_CLIENT') == 'ROLE_CLIENT' ? 'selected' }}>Client — sees only their own domains</option>
+        <option value="ROLE_ADMIN" {{ (role ?? '') == 'ROLE_ADMIN' ? 'selected' }}>Admin — full access to everything</option>
+    </select>
+</div>
+
+<div class="form-check mb-3">
+    <input class="form-check-input" type="checkbox" name="isActive" id="isActive" value="1" {{ isActive ?? true ? 'checked' }}>
+    <label class="form-check-label" for="isActive">Active (can log in)</label>
+</div>
