@@ -50,7 +50,22 @@ class ScanLeaksCommand extends Command
             return;
         }
 
-        [$domains, $imported] = $this->leakScanService->scanAll();
-        $io->text(sprintf('[%s] Scanned %d domain(s), imported %d new breach(es).', date('H:i:s'), $domains, $imported));
+        $lockPath = dirname(__DIR__, 2).'/var/scan-leaks.lock';
+        $handle = fopen($lockPath, 'c');
+        if ($handle === false || !flock($handle, LOCK_EX | LOCK_NB)) {
+            $io->warning('Another leak scan is already running; skipping this one.');
+            if (is_resource($handle)) {
+                fclose($handle);
+            }
+            return;
+        }
+
+        try {
+            [$domains, $imported] = $this->leakScanService->scanAll();
+            $io->text(sprintf('[%s] Scanned %d domain(s), imported %d new breach(es).', date('H:i:s'), $domains, $imported));
+        } finally {
+            flock($handle, LOCK_UN);
+            fclose($handle);
+        }
     }
 }

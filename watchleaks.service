@@ -1,0 +1,18 @@
+[Unit]
+Description=WatchLeaks stack (Apache, MySQL, web server and workers)
+Wants=network-online.target mysql.service apache2.service
+After=network-online.target mysql.service apache2.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/watchleaks
+Environment=WEB_HOST=0.0.0.0
+Environment=WEB_PORT=8000
+ExecStart=/opt/watchleaks/watchleaks.sh start
+ExecStop=/opt/watchleaks/watchleaks.sh stop
+TimeoutStartSec=120
+KillMode=none
+
+[Install]
+WantedBy=multi-user.target
